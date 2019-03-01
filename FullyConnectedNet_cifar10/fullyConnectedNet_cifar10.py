@@ -43,7 +43,19 @@ def compare_optims(data):
 
     for uo in update_rule:
         model = FullyConnectedNet(
-            input_dims, hidden_dims, num_classes, weight_scale, reg)  # 构建两层神经网络
+            input_dims, hidden_dims, num_classes, weight_scale, reg)  # 构建六层神经网络(不包括输入层)
+        solver = Solver(model, data,
+                        optim_config={
+                            'learning_rate': learning_rates[uo]
+                        },
+                        batch_size=100,
+                        iters_per_ann=400,
+                        num_epochs=5,
+                        update_rule=uo,
+                        print_every=100,
+                        verbose=True,
+                        lr_decay=1
+                        )
 
     pass
 

@@ -17,11 +17,11 @@ class KNearstNeighbor(object):
         # 测试样本：X_test = [N_test * D]
         # 求出向量与向量间的欧式距离放入矩阵dists[N_test * N_train]中
         dists = np.zeros((X_test.shape[0], self.X_train.shape[0]))
-        # 求两个向量欧氏距离dis，利用矩阵乘法求
+        # 求两个向量欧氏距离dis，利用矩阵乘法求，利用dists = （x - y）^2求取
         value_2xy = np.multiply(X_test.dot(self.X_train.T), -2)
         value_x2 = np.sum(np.square(X_test), axis=1, keepdims=True)
         value_y2 = np.sum(np.square(self.X_train), axis=1)
-        dists = value_2xy + value_x2 + value_y2
+        dists = value_2xy + value_x2 + value_y2  # x^2 - 2xy + y^2
         return dists
 
     def PredictLabel(self, dists, k):

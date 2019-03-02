@@ -42,8 +42,10 @@ def compare_optims(data):
     update_rule = ['rmsprop', 'sgd_momentum', 'sgd', 'adam']  # 权重更新方法
 
     for uo in update_rule:
+        # 构建六层神经网络(不包括输入层)
+        # 不用dropout，小批量样本不归一化
         model = FullyConnectedNet(
-            input_dims, hidden_dims, num_classes, weight_scale, reg)  # 构建六层神经网络(不包括输入层)
+            input_dims, hidden_dims, num_classes, weight_scale, reg)
         solver = Solver(model, data,
                         optim_config={
                             'learning_rate': learning_rates[uo]
@@ -56,8 +58,38 @@ def compare_optims(data):
                         verbose=True,
                         lr_decay=1
                         )
+        solver.train()
+        solvers[uo] = solver  # 绘图用
 
-    pass
+    # 不同的最优化方法绘图比较
+    # 比较内容：损失值、训练精度、验证精度
+    plt.subplot(3, 1, 1)
+    plt.title('Training loss')
+    plt.xlabel('Iteration')
+
+    plt.subplot(3, 1, 2)
+    plt.title('Training accuracy')
+    plt.xlabel('Epoch')
+
+    plt.subplot(3, 1, 3)
+    plt.title('Validation accuracy')
+    plt.xlabel('Epoch')
+
+    for update_rule, solver in solvers.items():
+        plt.subplot(3, 1, 1)
+        plt.plot(solver.loss_history, 'o', label=update_rule)
+
+        plt.subploy(3, 1, 2)
+        plt.plot(solver.train_acc_history, '-o', label=update_rule)
+
+        plt.subplot(3, 1, 2)
+        plt.plot(solver.val_acc_history, '-o', label=update_rule)
+
+    for i in [1, 2, 3]:
+        plt.subplot(3, 1, i)
+        plt.legend(loc='upper center', ncol=4)
+    plt.gcf().set_size_inches(15, 15)
+    plt.show()
 
 
 def pre_dataset(path):

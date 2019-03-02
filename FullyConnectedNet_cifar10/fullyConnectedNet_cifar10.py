@@ -79,7 +79,7 @@ def compare_optims(data):
         plt.subplot(3, 1, 1)
         plt.plot(solver.loss_history, 'o', label=update_rule)
 
-        plt.subploy(3, 1, 2)
+        plt.subplot(3, 1, 2)
         plt.plot(solver.train_acc_history, '-o', label=update_rule)
 
         plt.subplot(3, 1, 2)

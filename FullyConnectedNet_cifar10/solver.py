@@ -46,7 +46,8 @@ class Solver(object):
 
         # unpack keyword arguments
         self.batch_size = kwargs.pop('batch_size', 100)  # 小批量训练
-        self.iters_per_ann = kwargs.pop('iters_per_ann', 100)  # ?
+        self.iters_per_ann = kwargs.pop(
+            'iters_per_ann', 100)  # 每迭代这么多次，学习率改变一次
         self.num_epochs = kwargs.pop('num_epochs', 10)  # 横坐标：10个完整周期
         self.update_rule = kwargs.pop('update_rule', 'sgd')  # 最优化方法:默认sgd
         # 不同的最优化方法超参数设置，默认均包含学习率0.0001
@@ -113,7 +114,35 @@ class Solver(object):
             self.model.params[p], self.optim_configs[p] = next_w, next_config
 
     def check_accuracy(self, X, y, num_samples=None):
-        pass
+        '''Check accuracy of the model on the provided data.
+        - num_samples: If not None, subsample the data and only test the model
+        on num_samples datapoints.取数据的一部分
+        - self.batch_size: Split X and y into batches of this size to avoid using too
+        much memory.将数据一部分分批次
+        return:
+        - acc: Scalar giving the fraction of instances that were correctly
+        classified by the model.
+        '''
+        N = X.shape[0]
+        if num_samples is not None:
+            mask = np.random.choice(N, num_samples, replace=True)
+            N = num_samples
+            X = X[mask]
+            y = y[mask]
+
+        num_batchsize = int(N/self.batch_size)
+        if N % self.batch_size != 0:  # 除不尽加1
+            num_batchsize += 1
+
+        y_pred = []
+        for i in range(num_batchsize):
+            start = int(i*self.batch_size)
+            end = int((i+1)*self.batch_size)
+            scroes = self.model.loss(X[start:end])
+            y_pred.append(np.argmax(scroes, axis=1))
+        y_pred = np.hstack(y_pred)
+        acc = (y_pred == y).mean()
+        return acc
 
     def train(self):
         '''Run optimization to train the model.
@@ -121,14 +150,36 @@ class Solver(object):
         num_train = self.X_train.shape[0]
         # 训练完所有批次需要的次数（训练完所有批次定义为一个周期）
         iterations_per_epoch = max(num_train / self.batch_size, 1)
-        num_iters = self.num_epochs * iterations_per_epoch  # 总的小批量次数
+        num_iters = int(self.num_epochs * iterations_per_epoch)  # 总的小批量次数
         epoch = 0
         for it in range(num_iters):  # 循环训练小样本，一次100个
             # 更新一下。每次更新都是从所有例子中，抽取batch_size个例子，
             # 所以batch越小，要想覆盖所有的数据集
             # 所需要的迭代次数越多，也就解释了上面的iterations_per_epoch的来源
             self._step()
-        pass
+
+            # 学习率退火
+            if (it+1) % self.iters_per_ann == 0:
+                for c in self.optim_configs:
+                    self.optim_configs[c]['learning_rate'] *= self.lr_decay
+
+            # 每迭代print_every次，打印出一次结果
+            if self.verbose and (it % self.print_every == 0):
+                print('(Iteration %d / %d) loss: %f'
+                      % (it+1, num_iters, self.loss_history[-1]))
+
+            # 经过一个周期，或者训练完毕
+            if self.verbose and (it % iterations_per_epoch or it == (num_iters - 1)) == 0:
+                epoch += 1
+                # 每隔一个周期，求测试集上的精度，便于调参
+                train_acc = self.check_accuracy(
+                    self.X_train, self.y_train, num_samples=1000)
+                self.train_acc_history.append(train_acc)
+                # 验证集上的精度，正确的情况下，应和测试集上的精度差不多
+                val_acc = self.check_accuracy(self.X_val, self.y_val)
+                self.val_acc_history.append(val_acc)
+                print('(Epoch %d / %d) train acc: %f; val_acc: %f' %
+                      (epoch, self.num_epochs, train_acc, val_acc))
 
     def visualization_model(self):
         pass

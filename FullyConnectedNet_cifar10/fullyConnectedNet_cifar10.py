@@ -82,7 +82,7 @@ def compare_optims(data):
         plt.subplot(3, 1, 2)
         plt.plot(solver.train_acc_history, '-o', label=update_rule)
 
-        plt.subplot(3, 1, 2)
+        plt.subplot(3, 1, 3)
         plt.plot(solver.val_acc_history, '-o', label=update_rule)
 
     for i in [1, 2, 3]:
